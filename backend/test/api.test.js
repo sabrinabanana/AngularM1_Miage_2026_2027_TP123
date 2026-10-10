@@ -41,3 +41,15 @@ test("schémas Mongoose et relation", () => {
   assert.equal(t.title, "Blues");
   assert.equal(Track.schema.path("ownerId").options.ref, "User");
 });
+
+test("route protégée sans JWT répond 401", async () => {
+  const response = await fetch(base + "/api/tracks");
+  assert.equal(response.status, 401);
+});
+
+test("route protégée avec un JWT invalide répond 401", async () => {
+  const response = await fetch(base + "/api/tracks", {
+    headers: { Authorization: "Bearer invalid-test-token" },
+  });
+  assert.equal(response.status, 401);
+});

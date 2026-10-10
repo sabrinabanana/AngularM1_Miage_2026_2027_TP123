@@ -25,15 +25,26 @@ export class LoginPageComponent {
   });
 
   submit(): void {
+    this.error.set('');
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      this.error.set('Veuillez saisir un email et un mot de passe valides.');
+      return;
+    }
+
     const values = this.form.getRawValue();
     this.auth.login(values.email, values.password).subscribe({
       next: () => {
         console.debug('[LoginPage] Connexion réussie');
         void this.router.navigateByUrl('/tracks');
       },
-      error: (error: { error?: { message?: string } }) => {
+      error: (error: { status?: number; error?: { message?: string } }) => {
         console.error('[LoginPage] Échec de connexion', error);
-        this.error.set(error.error?.message ?? 'Erreur de connexion');
+        this.error.set(
+          error.status === 401
+            ? 'Email ou mot de passe incorrect.'
+            : error.error?.message ?? 'Erreur lors de la connexion.',
+        );
       },
     });
   }
