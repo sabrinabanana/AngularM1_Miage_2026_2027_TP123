@@ -1,6 +1,6 @@
 # Rapport d'usage de l'IA - TP1
 
-Pour chaque mission, détailler et fournir des explications concernant : objectif; prompt principal; plan proposé par l'agent; vérifications réalisées par le binôme; erreurs ou propositions rejetées; fichiers effectivement modifiés; preuve de fonctionnement; ce que chaque membre sait maintenant expliquer sans l'agent.
+Pour chaque mission, détailler et fournir des explications concernant : objectif; prompt principal; plan proposé par l'agent; vérifications réalisées; erreurs ou propositions rejetées; fichiers effectivement modifiés; preuve de fonctionnement.
 
 ## TP1 - Mission 0 : cartographie
 
@@ -528,21 +528,21 @@ proposé un découpage en missions, réalisées une par une :
 3. fil d'activité des amis ;
 4. téléchargement, image de couverture et badges de visibilité.
 
-### Décision prise par le binôme
+### Décision que j'ai prise
 
 Pour la mission 2, l'agent a proposé deux options : partager une piste avec
 des amis choisis, ou garder « tous mes amis » et ajouter seulement l'arrêt du
-partage. Nous avons choisi le partage piste par piste, plus proche du sujet.
+partage. J'ai choisi le partage piste par piste, plus proche du sujet.
 
 ### Vérifications réalisées
 
 - Par l'agent, à chaque mission : `npm test` dans `backend/` (37 tests à la
   fin, 6 au départ), `npm test` dans `frontend-starter/` (64 tests à la fin,
   11 au départ ; 68 après les corrections) et `npm run build`.
-- Par le binôme : lancement de l'application et test de la lecture. La pause
+- Par moi : lancement de l'application et test de la lecture. La pause
   ne fonctionnait pas depuis le bouton d'une piste ; après correction, elle
   fonctionne.
-- Par le binôme : test du partage avec deux comptes amis (un en navigation
+- Par moi : test du partage avec deux comptes amis (un en navigation
   privée). Il a révélé deux défauts, corrigés ensuite : le partage ne
   s'enregistrait pas, et l'inscription refusait un nom d'un caractère sans
   explication. Après correction, le partage fonctionne.
@@ -550,14 +550,14 @@ partage. Nous avons choisi le partage piste par piste, plus proche du sujet.
 ### Erreurs et problèmes rencontrés
 
 - Le bouton ▶ relançait le téléchargement et la lecture depuis le début au
-  lieu de mettre en pause : problème trouvé par nous en testant, pas par les
+  lieu de mettre en pause : problème que j'ai trouvé en testant, pas par les
   tests de l'agent. Corrigé par un bouton lecture/pause.
 - Le bouton « Enregistrer » du panneau de partage n'envoyait rien : il était
   relié à `(ngSubmit)`, qui n'existe pas sans `[formGroup]` ni `FormsModule`.
   Les tests de l'agent appelaient la méthode directement et n'ont rien vu.
   Sa première correction était un diagnostic par lecture du code ; comme le
   problème semblait persister, l'agent a rejoué le parcours dans un vrai
-  navigateur, ce qui a prouvé que le code corrigé fonctionnait et que notre
+  navigateur, ce qui a prouvé que le code corrigé fonctionnait et que mon
   onglet utilisait encore l'ancienne version (rechargement forcé nécessaire).
 - Un test de l'agent échouait parce qu'il remplaçait `MatSnackBar` par un
   faux objet que le composant n'utilisait pas ; l'agent a corrigé le test, pas
