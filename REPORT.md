@@ -360,3 +360,40 @@ avec les contrôles natifs.
 Tests ajoutés (5) : chargement au premier clic et affichage de ⏸, pause sans nouveau
 téléchargement, reprise, passage à une autre piste, et le même comportement sur la page Réseau.
 Résultat : frontend **64/64**, backend 37/37 (inchangé), build OK.
+
+## 9. Corrections après le test manuel à deux comptes
+
+Le test à deux comptes (un compte dans une fenêtre normale, l'autre en navigation privée) a
+révélé deux défauts que les tests automatiques n'avaient pas détectés.
+
+### Le partage ne s'enregistrait pas
+
+- **Symptôme.** Après avoir coché un ami et cliqué sur « Enregistrer », la case était de nouveau
+  décochée à la réouverture du panneau.
+- **Cause.** Le formulaire du panneau utilisait `(ngSubmit)`. Cet événement n'existe que si le
+  formulaire porte `[formGroup]` (Reactive Forms) ou si `FormsModule` est importé. Ici, ni l'un
+  ni l'autre : le clic n'appelait jamais `save()`, et le navigateur rechargeait la page. Angular
+  ne signale pas d'erreur de compilation pour un événement inconnu sur une balise HTML.
+- **Pourquoi les tests ne l'ont pas vu.** Ils appelaient `save()` directement, sans passer par le
+  bouton.
+- **Correction.** Événement natif `(submit)` avec `preventDefault()`. Nouveau test qui coche une
+  case et clique réellement sur le bouton.
+- **Preuve.** Parcours rejoué dans un vrai navigateur piloté automatiquement : requête
+  `PATCH /api/tracks/:id` avec réponse `200`, étiquette de l'ami affichée, case toujours cochée à
+  la réouverture. Puis confirmé à la main avec deux comptes.
+
+### Inscription refusée sans explication
+
+- **Symptôme.** Avec le nom « b », l'inscription échouait avec le message « Les informations
+  saisies sont invalides ».
+- **Cause.** Le modèle `User` exige un nom d'au moins 2 caractères, mais le formulaire ne le
+  vérifiait pas et le message d'erreur ne disait pas quel champ était en cause.
+- **Correction.** Validation du nom dans le formulaire avec un message précis, et message
+  d'erreur du serveur plus détaillé. Trois nouveaux tests.
+
+### Leçon retenue
+
+Un test qui appelle directement une méthode ne prouve pas que le bouton y est relié. Pour les
+formulaires, au moins un test doit passer par un vrai clic.
+
+Résultats finaux : backend **37/37**, frontend **68/68**, build OK.

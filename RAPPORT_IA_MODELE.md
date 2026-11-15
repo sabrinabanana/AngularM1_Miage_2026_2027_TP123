@@ -29,38 +29,6 @@ La cartographie s’appuie notamment sur `frontend-starter/src/main.ts`, `fronte
 
 `AppComponent` fournit la navigation et le `RouterOutlet`. `main.ts` enregistre `provideRouter` et `provideHttpClient` avec `authInterceptor`. `AuthService` encapsule les appels HTTP d’authentification et conserve le token dans le stockage local ainsi que dans un Signal. L’intercepteur lit ce Signal et ajoute l’en-tête Bearer aux requêtes protégées. Le clic de connexion traverse le composant, `AuthService`, `HttpClient`, la route Express et le modèle Mongoose `User`, qui interroge MongoDB.
 
-### À expliquer sans l’agent
-
-Chaque membre doit pouvoir expliquer les rôles suivants :
-
-- **Le composant Angular** gère l’interface et les interactions de l’utilisateur.
-  Par exemple, la page de connexion récupère les valeurs du formulaire, vérifie
-  les erreurs locales et demande une connexion. Il ne contient pas la logique
-  d’accès à MongoDB.
-- **Le service Angular** centralise les appels HTTP et la logique réutilisable.
-  `AuthService` appelle les routes `/api/auth/login`, `/api/auth/register`,
-  `/api/users/me` et conserve l’utilisateur courant dans des Signals. Le
-  composant appelle le service au lieu d’utiliser directement `HttpClient`.
-- **L’intercepteur** s’exécute automatiquement autour des requêtes HTTP. Ici,
-  `authInterceptor` lit le token conservé par `AuthService`, ajoute
-  l’en-tête `Authorization: Bearer ...` aux requêtes protégées et traite une
-  réponse `401` en déconnectant l’utilisateur puis en le redirigeant vers
-  `/login`. Il ne remplace pas le contrôle d’autorisation du backend.
-- **Le backend** reçoit les requêtes HTTP, vérifie les données et
-  l’authentification, applique les règles métier, interroge les modèles
-  Mongoose et renvoie une réponse HTTP. Le flux de connexion est donc :
-  composant → `AuthService` → `HttpClient`/intercepteur → API Express →
-  modèle `User` → MongoDB, puis la réponse revient dans l’autre sens.
-
-Angular ne communique jamais directement avec MongoDB parce que le navigateur
-ne doit pas connaître l’URI MongoDB, les identifiants de base ni les règles
-d’accès internes. Une connexion directe exposerait les secrets et permettrait
-à un client de contourner les validations, l’authentification et les règles
-de propriété. Le backend sert de frontière de sécurité : seul le serveur
-possède les informations de connexion MongoDB, valide les entrées, limite les
-champs renvoyés et décide quelles opérations sont autorisées. Angular échange
-uniquement avec l’API HTTP publique du backend.
-
 ## TP2 - Mission 2 : bibliothèque paginée
 
 ### Objectif
@@ -106,21 +74,6 @@ paramètres puis relance `load`. `TrackService` reste l’unique couche qui
 utilise `HttpClient`; le composant ne connaît que le service.
 
 ![alt text](image-2.png)
-
-### Ce que chaque membre sait expliquer sans l’agent
-
-Chaque membre doit pouvoir expliquer que `MatPaginator` émet un `PageEvent`,
-que `pageIndex` commence à zéro alors que l’API commence à un, et que
-`TrackService.list(page, limit)` transmet ces deux paramètres au backend. La
-liste affichée correspond uniquement à la page reçue par HTTP, et non à un
-découpage local de toutes les pistes.
-
-Chaque membre doit savoir expliquer que `MatPaginator` représente la pagination
-dans l’interface, que `pageIndex` est indexé à partir de zéro côté Angular et
-que l’API reçoit une page commençant à un. Il doit aussi savoir vérifier dans
-Network qu’un changement de page déclenche une nouvelle requête avec un
-paramètre `page` différent. Enfin, il doit distinguer la liste paginée reçue du
-serveur d’un éventuel découpage local, qui est interdit dans ce TP.
 
 ## TP2 - Mission 3 : upload et lecture audio
 
@@ -248,27 +201,6 @@ refusée par la route backend filtrée par `ownerId`.
 ![alt text](image-4.png)
 ![alt text](image-5.png)
 ![alt text](image-6.png)
-
-### Ce que chaque membre sait expliquer sans l’agent
-
-Chaque membre doit pouvoir retracer les deux flux suivants :
-
-```text
-choix fichier -> TracksPageComponent -> TrackService -> HttpClient -> API
-API -> réponse Blob -> ObjectURL -> [src] du lecteur audio
-```
-
-Il doit aussi savoir expliquer pourquoi le JWT est ajouté par l’intercepteur
-pour la requête `HttpClient`, pourquoi l’URL du lecteur n’est pas utilisée
-directement contre l’API protégée, pourquoi la validation frontend ne suffit
-pas, et pourquoi chaque ObjectURL doit être révoquée.
-
-Chaque membre doit savoir expliquer le flux d’upload et de lecture, le rôle de
-`FormData`, de l’intercepteur JWT, du Blob et de l’ObjectURL. Il doit également
-pouvoir justifier la validation frontend, rappeler que le backend reste la
-validation de sécurité, expliquer pourquoi les pistes ne chargent pas toutes
-leur audio à l’affichage, et décrire la différence entre téléchargement complet,
-buffering navigateur et streaming serveur.
 
 ### Option couverture : préparation frontend uniquement
 
@@ -440,14 +372,6 @@ d’une authentification réelle ou d’une base MongoDB.
 - Ne jamais afficher de JWT, mot de passe, secret ou URI MongoDB dans les
   captures.
 
-### Ce que chaque membre sait expliquer sans l’agent
-
-Chaque membre doit savoir montrer le bouton de suppression, expliquer pourquoi
-la confirmation et `deletingTrackId` empêchent une action accidentelle ou
-double, et retracer `card → TrackService → DELETE`. Il doit aussi expliquer
-que le serveur vérifie le JWT et le propriétaire, même si l’interface est
-protégée par un guard.
-
 ## 14 octobre 2026 - Ajout du mode sombre
 
 - Ajout d’un bouton **Mode sombre / Mode clair** dans la navigation principale.
@@ -614,19 +538,27 @@ partage. Nous avons choisi le partage piste par piste, plus proche du sujet.
 
 - Par l'agent, à chaque mission : `npm test` dans `backend/` (37 tests à la
   fin, 6 au départ), `npm test` dans `frontend-starter/` (64 tests à la fin,
-  11 au départ) et `npm run build`.
+  11 au départ ; 68 après les corrections) et `npm run build`.
 - Par le binôme : lancement de l'application et test de la lecture. La pause
   ne fonctionnait pas depuis le bouton d'une piste ; après correction, elle
   fonctionne.
-- À faire : scénario complet à deux comptes amis (partage, écoute par l'ami,
-  arrêt du partage, fil d'activité). Les tests automatiques n'utilisent pas
-  MongoDB, donc ce parcours n'est pas encore prouvé.
+- Par le binôme : test du partage avec deux comptes amis (un en navigation
+  privée). Il a révélé deux défauts, corrigés ensuite : le partage ne
+  s'enregistrait pas, et l'inscription refusait un nom d'un caractère sans
+  explication. Après correction, le partage fonctionne.
 
 ### Erreurs et problèmes rencontrés
 
 - Le bouton ▶ relançait le téléchargement et la lecture depuis le début au
   lieu de mettre en pause : problème trouvé par nous en testant, pas par les
   tests de l'agent. Corrigé par un bouton lecture/pause.
+- Le bouton « Enregistrer » du panneau de partage n'envoyait rien : il était
+  relié à `(ngSubmit)`, qui n'existe pas sans `[formGroup]` ni `FormsModule`.
+  Les tests de l'agent appelaient la méthode directement et n'ont rien vu.
+  Sa première correction était un diagnostic par lecture du code ; comme le
+  problème semblait persister, l'agent a rejoué le parcours dans un vrai
+  navigateur, ce qui a prouvé que le code corrigé fonctionnait et que notre
+  onglet utilisait encore l'ancienne version (rechargement forcé nécessaire).
 - Un test de l'agent échouait parce qu'il remplaçait `MatSnackBar` par un
   faux objet que le composant n'utilisait pas ; l'agent a corrigé le test, pas
   le code.
@@ -642,14 +574,3 @@ partage. Nous avons choisi le partage piste par piste, plus proche du sujet.
   `shared/utils/save-blob.ts`.
 - Documentation : `REPORT.md` (nouveau), `API_CONTRACT.md`, `README.md`,
   `PROJECT_CONTEXT.md`.
-
-### À savoir expliquer sans l'agent
-
-- Pourquoi l'accès à une piste partagée est revérifié à chaque écoute, et ce
-  qui se passe quand on retire un ami.
-- Pourquoi la recherche ne peut pas faire apparaître une piste privée
-  (portée et recherche combinées avec `$and`, saisie échappée).
-- Pourquoi les couvertures et les téléchargements passent par un Blob et
-  `HttpClient` plutôt que par une simple URL (en-tête `Authorization`).
-- Pourquoi le fil d'activité est calculé à la demande, sans collection dédiée.
-- Ce que les tests prouvent, et ce qu'ils ne prouvent pas sans MongoDB.

@@ -15,7 +15,11 @@ export class RegisterPageComponent {
   readonly error = signal('');
   
   readonly form = new FormGroup({
-    name: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    // Même règle que le modèle User du backend : 2 caractères minimum.
+    name: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.pattern(/^\s*\S.*\S\s*$/)],
+    }),
     email: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.email] }),
     password: new FormControl('', {
       nonNullable: true,
@@ -44,7 +48,7 @@ export class RegisterPageComponent {
           error.status === 409
             ? 'Cette adresse email est déjà utilisée.'
             : error.status === 400
-              ? 'Les informations saisies sont invalides.'
+              ? 'Informations invalides : nom d’au moins 2 caractères, email valide et mot de passe d’au moins 8 caractères.'
               : message ?? 'Erreur lors de l’inscription.',
         );
       },

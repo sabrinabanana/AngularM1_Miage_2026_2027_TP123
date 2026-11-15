@@ -81,6 +81,26 @@ describe('TrackShareEditorComponent', () => {
     expect(component.saving()).toBe(false);
   });
 
+  it('enregistre au clic réel sur le bouton, sans laisser le navigateur recharger la page', () => {
+    const element = fixture.nativeElement as HTMLElement;
+    const form = element.querySelector('form') as HTMLFormElement;
+    let defaultPrevented = false;
+    form.addEventListener('submit', (event) => {
+      defaultPrevented = event.defaultPrevented;
+    });
+    const boxes = element.querySelectorAll<HTMLInputElement>('input[type=checkbox]');
+
+    boxes[1].click();
+    element.querySelector<HTMLButtonElement>('button[type=submit]')?.click();
+
+    expect(defaultPrevented).toBe(true);
+    expect(trackService.update).toHaveBeenCalledWith('track-1', {
+      title: 'Riff du matin',
+      visibility: 'private',
+      sharedWith: ['alice', 'bob'],
+    });
+  });
+
   it('vide la liste de partage quand la piste n’est plus privée', () => {
     component.setVisibility({ target: { value: 'public' } } as unknown as Event);
     fixture.detectChanges();

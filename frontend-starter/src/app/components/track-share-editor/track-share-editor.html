@@ -1,4 +1,6 @@
-<form class="share-editor" (ngSubmit)="save()" aria-label="Modifier et partager la piste">
+<!-- (submit) natif : sans [formGroup], ReactiveFormsModule ne fournit pas (ngSubmit).
+     preventDefault empêche le navigateur de recharger la page. -->
+<form class="share-editor" (submit)="$event.preventDefault(); save()" aria-label="Modifier et partager la piste">
   <label>
     Titre
     <input [formControl]="title" maxlength="120" [readonly]="saving()" />

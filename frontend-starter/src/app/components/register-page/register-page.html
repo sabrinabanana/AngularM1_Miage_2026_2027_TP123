@@ -4,6 +4,8 @@
     <label>Nom<input formControlName="name" /></label>
     @if (form.controls.name.touched && form.controls.name.hasError('required')) {
       <small class="error">Le nom est obligatoire.</small>
+    } @else if (form.controls.name.touched && form.controls.name.hasError('pattern')) {
+      <small class="error">Le nom doit contenir au moins 2 caractères.</small>
     }
     <label>Email<input type="email" formControlName="email" /></label>
     @if (form.controls.email.touched && form.controls.email.hasError('required')) {
