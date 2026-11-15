@@ -1,0 +1,50 @@
+<form class="share-editor" (ngSubmit)="save()" aria-label="Modifier et partager la piste">
+  <label>
+    Titre
+    <input [formControl]="title" maxlength="120" [readonly]="saving()" />
+  </label>
+
+  <label>
+    Visibilité
+    <select [value]="visibility()" (change)="setVisibility($event)" [disabled]="saving()">
+      <option value="private">Privée (moi et les amis choisis)</option>
+      <option value="friends">Tous mes amis</option>
+      <option value="public">Publique</option>
+    </select>
+  </label>
+
+  @if (visibility() === 'private') {
+    <fieldset [disabled]="saving()">
+      <legend>Partager avec ({{ selectedCount() }} sélectionné{{ selectedCount() > 1 ? 's' : '' }})</legend>
+      @if (friendsLoading()) {
+        <p role="status">Chargement de vos amis…</p>
+      } @else {
+        @for (friend of friends(); track friend.id) {
+          <label class="friend-option">
+            <input
+              type="checkbox"
+              [checked]="isSelected(friend.id)"
+              (change)="toggleFriend(friend.id)"
+            />
+            {{ friend.name }}
+          </label>
+        } @empty {
+          <p class="hint">Vous n’avez pas encore d’amis. Invitez-en depuis « Mon réseau ».</p>
+        }
+      }
+    </fieldset>
+  } @else if (visibility() === 'friends') {
+    <p class="hint">Tous vos amis actuels et futurs pourront écouter cette piste.</p>
+  } @else {
+    <p class="hint">Tout utilisateur connecté pourra trouver et écouter cette piste.</p>
+  }
+
+  @if (error()) {
+    <p class="error" role="alert">{{ error() }}</p>
+  }
+
+  <div class="actions">
+    <button type="submit" [disabled]="saving()">{{ saving() ? 'Enregistrement…' : 'Enregistrer' }}</button>
+    <button type="button" class="secondary" (click)="cancelled.emit()" [disabled]="saving()">Annuler</button>
+  </div>
+</form>

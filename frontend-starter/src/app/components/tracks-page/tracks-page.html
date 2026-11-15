@@ -5,19 +5,64 @@
     <p>Importez, retrouvez et écoutez vos morceaux de travail.</p>
   </div>
 
+  <article class="card recent" aria-labelledby="recent-title">
+    <div class="row">
+      <h2 id="recent-title">Récemment ajoutés</h2>
+      <button type="button" (click)="loadRecent()" [disabled]="recentLoading()">Actualiser</button>
+    </div>
+    <p class="hint">Les dernières pistes publiques et celles partagées par vos amis.</p>
+    @if (recentError()) {
+      <p class="error" role="alert">{{ recentError() }}</p>
+    }
+    @if (recentLoading()) {
+      <p role="status">Chargement des ajouts récents…</p>
+    } @else {
+      <ul class="recent-list">
+        @for (track of recentTracks(); track track.id) {
+          <li class="recent-item">
+            <app-track-cover [track]="track" />
+            <button
+              type="button"
+              class="recent-play"
+              (click)="togglePlay(track)"
+              [attr.aria-label]="(isPlayingTrack(track) ? 'Mettre en pause ' : 'Lire ') + track.title"
+            >{{ isPlayingTrack(track) ? '⏸' : '▶' }}</button>
+            <div>
+              <b>{{ track.title }}</b>
+              <small>
+                {{ track.ownerName ?? 'Utilisateur inconnu' }} · {{ formatDate(track.createdAt) }}
+                · {{ track.visibility === 'friends' ? 'Amis' : 'Publique' }}
+              </small>
+            </div>
+          </li>
+        } @empty {
+          <li class="hint">Rien de nouveau pour l'instant. Ajoutez des amis ou explorez les pistes publiques.</li>
+        }
+      </ul>
+    }
+  </article>
+
   <div class="grid">
     <article class="card">
       <h2>Importer</h2>
       <label>Titre<input [formControl]="title" [readonly]="uploadLoading()" /></label>
       <label>Fichier audio<input #fileInput type="file" accept="audio/mpeg,audio/wav,audio/x-wav,audio/ogg,audio/mp4,audio/x-m4a" (change)="choose($event)" [disabled]="uploadLoading()" /></label>
-      <label>Image de couverture (aperçu local)<input type="file" accept="image/*" (change)="chooseCover($event)" [disabled]="uploadLoading()" /></label>
+      <label>Image de couverture (optionnelle, JPEG/PNG/WebP, 2 Mo max)<input #coverInput type="file" accept="image/jpeg,image/png,image/webp" (change)="chooseCover($event)" [disabled]="uploadLoading()" /></label>
+      <label>
+        Visibilité
+        <select [value]="visibility()" (change)="setVisibility($event)" [disabled]="uploadLoading()">
+          <option value="private">Privée</option>
+          <option value="public">Publique</option>
+          <option value="friends">Tous mes amis</option>
+        </select>
+      </label>
       @if (selectedFileName()) {
         <small>Fichier sélectionné : {{ selectedFileName() }}</small>
       }
       @if (coverPreviewUrl()) {
         <figure class="cover-preview">
           <img [src]="coverPreviewUrl()" [alt]="'Aperçu de la couverture ' + coverFileName()" />
-          <figcaption>{{ coverFileName() }} — aperçu local non sauvegardé</figcaption>
+          <figcaption>{{ coverFileName() }} — sera enregistrée avec la piste</figcaption>
         </figure>
       }
       <button type="button" (click)="upload()" [disabled]="!file || uploadLoading()">
@@ -51,8 +96,26 @@
 
     <article class="card">
       <div class="row">
-        <h2>Mes pistes</h2>
+        <div class="scope-tabs" role="group" aria-label="Visibilité des pistes">
+          <button type="button" [class.active]="!publicOnly()" (click)="switchScope(false)">Mes pistes</button>
+          <button type="button" [class.active]="publicOnly()" (click)="switchScope(true)">Explorer les pistes publiques</button>
+          <button type="button" [class.active]="friendsOnly()" (click)="switchFriends()">Pistes de mes amis</button>
+        </div>
         <button type="button" (click)="load()">Actualiser</button>
+      </div>
+      <div class="search-row">
+        <label>
+          Rechercher une piste
+          <input
+            type="search"
+            [formControl]="search"
+            maxlength="80"
+            placeholder="Titre ou nom de fichier"
+          />
+        </label>
+        @if (search.value) {
+          <button type="button" (click)="clearSearch()">Effacer</button>
+        }
       </div>
       @if (error()) {
         <p class="error" role="alert">{{ error() }}</p>
@@ -62,18 +125,83 @@
       } @else {
         @for (track of tracks(); track track.id) {
           <article class="track">
+            <app-track-cover [track]="track" />
             <div>
-              <h3>{{ track.title }}</h3>
+              <h3>
+                {{ track.title }}
+                <span class="badge" [class]="'badge badge-' + visibilityKind(track)">{{ visibilityLabel(track) }}</span>
+              </h3>
               <dl>
+                @if ((publicOnly() || friendsOnly()) && track.ownerName) {
+                  <div><dt>Par</dt><dd>{{ track.ownerName }}</dd></div>
+                }
                 <div><dt>Nom</dt><dd>{{ track.originalName }}</dd></div>
                 <div><dt>Format</dt><dd>{{ formatType(track.mimeType, track.originalName) }}</dd></div>
                 <div><dt>Taille</dt><dd>{{ formatSize(track.size) }}</dd></div>
                 <div><dt>Ajoutée le</dt><dd>{{ formatDate(track.createdAt) }}</dd></div>
               </dl>
+              @if (isOwnScope()) {
+                @if (track.sharedWith?.length) {
+                  <ul class="share-chips" [attr.aria-label]="'Amis ayant accès à ' + track.title">
+                    @for (share of track.sharedWith; track share.id) {
+                      <li>
+                        {{ share.name ?? 'Ami' }}
+                        <button
+                          type="button"
+                          class="chip-remove"
+                          (click)="unshare(track, share)"
+                          [disabled]="unsharingKey() !== null"
+                          [attr.aria-label]="'Arrêter le partage avec ' + (share.name ?? 'cet ami')"
+                        >✕</button>
+                      </li>
+                    }
+                  </ul>
+                }
+                @if (editingTrackId() === track.id) {
+                  <app-track-share-editor
+                    [track]="track"
+                    [friends]="friends()"
+                    [friendsLoading]="friendsLoading()"
+                    (saved)="trackSaved($event)"
+                    (cancelled)="closeEditor()"
+                  />
+                }
+              }
             </div>
             <div class="track-actions">
-              <button type="button" (click)="play(track)" [attr.aria-label]="'Lire ' + track.title">▶</button>
               <button
+                type="button"
+                (click)="togglePlay(track)"
+                [attr.aria-label]="(isPlayingTrack(track) ? 'Mettre en pause ' : 'Lire ') + track.title"
+              >{{ isPlayingTrack(track) ? '⏸' : '▶' }}</button>
+              <button
+                type="button"
+                (click)="download(track)"
+                [disabled]="downloadingTrackId() !== null"
+                [attr.aria-label]="'Télécharger ' + track.title"
+              >
+                {{ downloadingTrackId() === track.id ? '…' : 'Télécharger' }}
+              </button>
+              @if (isOwnScope()) {
+                <button
+                  type="button"
+                  (click)="toggleEditor(track)"
+                  [attr.aria-expanded]="editingTrackId() === track.id"
+                  [attr.aria-label]="'Modifier et partager ' + track.title"
+                >
+                  {{ editingTrackId() === track.id ? 'Fermer' : 'Partager' }}
+                </button>
+                @if (isShared(track)) {
+                  <button
+                    type="button"
+                    class="danger"
+                    (click)="stopAllSharing(track)"
+                    [attr.aria-label]="'Arrêter tous les partages de ' + track.title"
+                  >
+                    Arrêter le partage
+                  </button>
+                }
+                <button
                 type="button"
                 class="danger"
                 (click)="deleteTrack(track)"
@@ -81,11 +209,16 @@
                 [attr.aria-label]="'Supprimer ' + track.title"
               >
                 {{ deletingTrackId() === track.id ? 'Suppression…' : 'Supprimer' }}
-              </button>
+                </button>
+              }
             </div>
           </article>
         } @empty {
-          <p>Aucune piste.</p>
+          @if (search.value.trim()) {
+            <p>Aucune piste ne correspond à « {{ search.value.trim() }} ».</p>
+          } @else {
+            <p>Aucune piste.</p>
+          }
         }
       }
       <mat-paginator
@@ -104,7 +237,43 @@
       }
       @if (audioUrl()) {
         <p>Lecture : <b>{{ currentTrackTitle() }}</b></p>
-        <audio [src]="audioUrl()" controls autoplay (error)="audioPlaybackError()"></audio>
+        <audio
+          #audioElement
+          [src]="audioUrl()"
+          controls
+          autoplay
+          (loadedmetadata)="audioReady(audioElement)"
+          (play)="audioStarted()"
+          (pause)="audioPaused()"
+          (ended)="audioPaused()"
+          (error)="audioPlaybackError()"
+        ></audio>
+        <div class="audio-tools">
+          <canvas #visualizer class="visualizer" aria-label="Visualiseur de fréquences audio"></canvas>
+          <label>
+            Balance stéréo
+            <input
+              type="range"
+              min="-1"
+              max="1"
+              step="0.01"
+              [value]="pan()"
+              (input)="setPan($event)"
+              [attr.aria-valuetext]="pan() < 0 ? 'Gauche' : pan() > 0 ? 'Droite' : 'Centre'"
+            />
+            <small>{{ pan() < 0 ? 'Gauche' : pan() > 0 ? 'Droite' : 'Centre' }}</small>
+          </label>
+          <label>
+            Graves
+            <input type="range" min="-12" max="12" step="1" [value]="bassGain()" (input)="setBassGain($event)" />
+            <small>{{ bassGain() }} dB</small>
+          </label>
+          <label>
+            Aigus
+            <input type="range" min="-12" max="12" step="1" [value]="trebleGain()" (input)="setTrebleGain($event)" />
+            <small>{{ trebleGain() }} dB</small>
+          </label>
+        </div>
       }
     </article>
   </div>

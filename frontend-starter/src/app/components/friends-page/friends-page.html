@@ -1,0 +1,105 @@
+<section class="card friends-page">
+  <h1>Mon réseau</h1>
+  <p>Ajoutez des amis pour partager des pistes avec eux.</p>
+
+  <form class="search-form" (ngSubmit)="search()">
+    <label>Rechercher par nom ou email
+      <input
+        name="query"
+        [ngModel]="query()"
+        (ngModelChange)="queryChanged($event)"
+        placeholder="Au moins 2 caractères"
+      />
+    </label>
+    <button type="submit">Rechercher</button>
+  </form>
+
+  @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+  @if (results().length) {
+    <h2>Résultats</h2>
+    @for (user of results(); track user.id) {
+      <div class="friend-row">
+        <span><b>{{ user.name }}</b> — {{ user.email }}</span>
+        <button type="button" (click)="request(user)">Inviter</button>
+      </div>
+    }
+  }
+
+  <div class="activity-header">
+    <h2 id="activity-title">Activité de mes amis</h2>
+    <button type="button" (click)="loadActivity()" [disabled]="activityLoading()">Actualiser</button>
+  </div>
+  @if (activityError()) { <p class="error" role="alert">{{ activityError() }}</p> }
+  @if (audioError()) { <p class="error" role="alert">{{ audioError() }}</p> }
+  @if (activityLoading()) {
+    <p role="status">Chargement de l’activité…</p>
+  } @else {
+    <ul class="activity-list" aria-labelledby="activity-title">
+      @for (item of activity(); track item.id) {
+        <li class="activity-item">
+          @if (item.track; as track) {
+            <app-track-cover [track]="track" />
+          }
+          <div class="activity-text">
+            <span>{{ activityText(item) }}</span>
+            @if (item.track; as track) {
+              <b>« {{ track.title }} »</b>
+            }
+            <small>{{ formatDate(item.date) }}</small>
+          </div>
+          @if (item.track; as track) {
+            <button
+              type="button"
+              (click)="togglePlay(track)"
+              [disabled]="audioLoadingId() !== null"
+              [attr.aria-label]="(isPlayingTrack(track) ? 'Mettre en pause ' : 'Écouter ') + track.title"
+            >
+              {{ audioLoadingId() === track.id ? '…' : isPlayingTrack(track) ? '⏸ Pause' : '▶ Écouter' }}
+            </button>
+          }
+        </li>
+      } @empty {
+        <li class="muted">Aucune activité pour le moment. Ajoutez des amis pour suivre leurs partages.</li>
+      }
+    </ul>
+  }
+  @if (audioUrl()) {
+    <div class="activity-player">
+      <p>Lecture : <b>{{ playingTitle() }}</b></p>
+      <audio
+        #player
+        [src]="audioUrl()"
+        controls
+        autoplay
+        (play)="playing.set(true)"
+        (pause)="playing.set(false)"
+        (ended)="playing.set(false)"
+      ></audio>
+    </div>
+  }
+
+  <h2>Demandes reçues</h2>
+  @for (relation of lists().incoming; track relation.id) {
+    <div class="friend-row">
+      <span>{{ relation.user.name }} — {{ relation.user.email }}</span>
+      <span><button type="button" (click)="accept(relation.id)">Accepter</button>
+      <button type="button" class="danger" (click)="reject(relation.id)">Refuser</button></span>
+    </div>
+  } @empty { <p>Aucune demande en attente.</p> }
+
+  <h2>Demandes envoyées</h2>
+  @for (relation of lists().outgoing; track relation.id) {
+    <div class="friend-row">
+      <span>{{ relation.user.name }} — {{ relation.user.email }}</span>
+      <span>En attente</span>
+    </div>
+  } @empty { <p>Aucune demande envoyée.</p> }
+
+  <h2>Mes amis</h2>
+  @for (relation of lists().friends; track relation.id) {
+    <div class="friend-row">
+      <span>{{ relation.user.name }} — {{ relation.user.email }}</span>
+      <button type="button" class="danger" (click)="remove(relation.id)">Retirer</button>
+    </div>
+  } @empty { <p>Aucun ami pour le moment.</p> }
+</section>

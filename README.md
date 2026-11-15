@@ -43,10 +43,48 @@ npm start
 Ouvrir `http://localhost:4200`. Le compte de démonstration est
 `demo@example.com` / `Demo1234!`.
 
+## Fonctionnalités du mini-projet (TP4)
+
+À partir du prototype des TP1 à 3, l'application est devenue un mini réseau
+social de partage de pistes audio :
+
+- **recherche** de pistes par titre ou nom de fichier, et encart
+  « Récemment ajoutés » ;
+- **visibilité** de chaque piste : privée, tous mes amis ou publique ;
+- **partage piste par piste** avec des amis choisis, et arrêt d'un partage
+  (un ami, ou tous d'un coup) ;
+- **réseau** : recherche d'utilisateurs, invitations, acceptation, refus,
+  retrait d'un ami, fil d'activité des amis ;
+- **fichiers** : téléchargement d'une piste, image de couverture enregistrée
+  avec la piste ;
+- **lecteur** : lecture et pause depuis chaque piste, visualiseur, balance,
+  graves et aigus.
+
+Le détail des choix techniques et des résultats de tests est dans
+[REPORT.md](REPORT.md).
+
+## Tests et build
+
+```bash
+cd backend
+npm test
+
+cd ../frontend-starter
+npm test
+npm run build
+```
+
+Les tests n'ont pas besoin de MongoDB.
+
 ## Documents de travail
+
+- [REPORT.md](REPORT.md) : rapport du TP4 (travail effectué, choix techniques,
+  fonctionnalités, résultats des tests) ;
 
 - [SUJET_ETUDIANT_TP1.md](SUJET_ETUDIANT_TP1.md), [SUJET_ETUDIANT_TP2.md](SUJET_ETUDIANT_TP2.md) et [SUJET_ETUDIANT_TP3.md](SUJET_ETUDIANT_TP3.md) : missions des trois séances ;
 - [API_CONTRACT.md](API_CONTRACT.md) : endpoints, authentification et formats échangés ;
+- [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) : contexte permanent à consulter et
+  à mettre à jour avant chaque évolution ;
 - [RAPPORT_IA_MODELE.md](RAPPORT_IA_MODELE.md) : modèle de compte rendu.
 - [CONSEILS_POUR_UTIISER_ASSISTANT_AI.md](CONSEILS_POUR_UTIISER_ASSISTANT_AI.md) : utiliser correctement un assistant IA, quel que soit l’outil choisi.
 

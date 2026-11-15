@@ -6,6 +6,16 @@
   <nav aria-label="Navigation principale">
     <a routerLink="/tracks">Backing tracks</a>
     <a routerLink="/profile">Profil</a>
+    <a routerLink="/friends">Mon réseau</a>
+    <button
+      type="button"
+      class="theme-toggle"
+      (click)="toggleTheme()"
+      [attr.aria-pressed]="isDarkMode()"
+      [attr.aria-label]="isDarkMode() ? 'Activer le mode clair' : 'Activer le mode sombre'"
+    >
+      {{ isDarkMode() ? 'Mode clair' : 'Mode sombre' }}
+    </button>
     @if (auth.token()) {
       <button type="button" (click)="logout()">Déconnexion</button>
     } @else {

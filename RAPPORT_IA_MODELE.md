@@ -447,3 +447,209 @@ la confirmation et `deletingTrackId` empêchent une action accidentelle ou
 double, et retracer `card → TrackService → DELETE`. Il doit aussi expliquer
 que le serveur vérifie le JWT et le propriétaire, même si l’interface est
 protégée par un guard.
+
+## 14 octobre 2026 - Ajout du mode sombre
+
+- Ajout d’un bouton **Mode sombre / Mode clair** dans la navigation principale.
+- Ajout d’une préférence persistante dans `localStorage` afin de conserver le mode choisi après un rechargement.
+- Centralisation des couleurs dans des variables CSS claires et sombres (`--text`, `--surface`, `--muted-text`, `--border`, etc.).
+- Adaptation des cartes, formulaires, champs de saisie, liens, messages d’erreur et de succès, barre de progression et pagination Angular Material afin que les textes restent lisibles dans les deux modes.
+- Ajout des attributs ARIA `aria-label` et `aria-pressed` sur le bouton pour rendre le changement de thème compréhensible avec les technologies d’assistance.
+
+## 14 octobre 2026 - Mission 1 TP4 : pistes publiques et privées
+
+- Ajout du champ Mongoose `Track.isPublic`, booléen indexé avec la valeur par défaut `false` afin que les nouvelles pistes restent privées par défaut.
+- Le `POST /api/tracks` lit le champ multipart `isPublic` et l’enregistre strictement comme valeur booléenne.
+- Le `GET /api/tracks` conserve le listing des pistes personnelles et accepte `?public=true` pour explorer les pistes publiques.
+- Le endpoint audio autorise le propriétaire ou toute piste dont `isPublic` vaut `true`, tout en conservant l’authentification JWT.
+- Le modèle Angular expose `ownerId` et `isPublic`; `TrackService` transmet la visibilité dans `FormData` et le filtre public dans les paramètres HTTP.
+- Le formulaire de `TracksPage` contient une case à cocher « Rendre cette piste publique ».
+- L’écran permet de basculer entre « Mes pistes » et « Explorer les pistes publiques ». Le bouton de suppression reste uniquement disponible dans la vue personnelle.
+- Ajout de tests backend vérifiant la valeur par défaut et la projection publique, ainsi que de tests Angular vérifiant les paramètres de filtre et le champ multipart.
+
+## 14 octobre 2026 - Création du contexte permanent du projet
+
+- Création de [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md), document centralisant
+  l'architecture, les routes backend et frontend, les modèles, les commandes,
+  les règles de sécurité et les conventions à préserver.
+- Ajout d'une règle de maintenance : mettre à jour ce document à chaque
+  modification importante afin de faciliter la reprise du projet lors d'une
+  prochaine session.
+- Ajout d'un lien vers ce document dans `README.md`.
+
+## 14 octobre 2026 - Documentation du stockage audio et du futur cloud
+
+- Ajout dans [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) d'une explication
+  pédagogique du stockage actuel : métadonnées dans MongoDB Atlas et fichiers
+  audio dans `backend/data/uploads/` sur la machine qui exécute le backend.
+- Documentation de la différence entre le problème de permissions
+  (propriétaire ou piste publique) et le problème de disponibilité du fichier
+  local lorsque le backend est arrêté ou déplacé.
+- Documentation d'une évolution possible en fin de projet vers un déploiement
+  cloud comprenant un frontend Angular hébergé, un backend Express hébergé et
+  un stockage objet persistant pour les fichiers audio.
+
+## 14 octobre 2026 - Correction de la visibilité publique à l'upload
+
+- Renforcement du parsing backend du champ multipart `isPublic` afin que les
+  valeurs `true`, `"true"`, `"1"`, `"on"` et `"yes"` soient reconnues comme
+  publiques.
+- Compatibilité ajoutée avec le champ multipart `public` en complément de
+  `isPublic`.
+- Ajout d'un test unitaire vérifiant les différentes valeurs acceptées et le
+  comportement privé par défaut.
+
+## 14 octobre 2026 - Fiabilisation de la case « Rendre publique »
+
+- Remplacement de la liaison `FormControl` de la case de visibilité par un
+  signal Angular synchronisé explicitement avec `event.target.checked`.
+- La valeur réellement cochée est maintenant capturée juste avant l'envoi et
+  transmise au `TrackService`, avec une trace de diagnostic indiquant
+  « publique » ou « privée ».
+
+## 14 octobre 2026 - Diagnostic de l'instance backend obsolète
+
+- Un test direct de `POST /api/tracks` a montré que l'API active renvoyait une
+  piste sans le champ `isPublic`, preuve qu'un ancien processus Node utilisait
+  encore le backend avant correction.
+- Le processus backend actif a été arrêté puis relancé depuis `backend/`.
+- Un nouvel upload direct avec `isPublic=true` renvoie maintenant
+  `isPublic: true`, confirmant que l'API et le stockage MongoDB enregistrent
+  correctement la visibilité publique.
+- Rappel ajouté dans `PROJECT_CONTEXT.md` : un rebuild Angular ne redémarre
+  pas le processus Express ; après toute modification backend, il faut
+  redémarrer `npm start`.
+
+## 14 octobre 2026 - Mission 2 : lecteur audio WebAudio
+
+- Enrobage de l'élément `<audio>` avec un `AudioContext` et un pipeline
+  `MediaElementAudioSourceNode → filtres graves/aigus → StereoPannerNode →
+  AnalyserNode → sortie`.
+- Ajout d'un visualiseur de spectre de fréquences animé sur canvas pendant la
+  lecture.
+- Ajout de curseurs pour la balance stéréo, les graves et les aigus.
+- Conservation de la source audio Blob/ObjectURL et des contrôles natifs de
+  lecture, pause et progression.
+- Nettoyage de l'animation, des connexions WebAudio, du contexte audio et des
+  ObjectURL dans `ngOnDestroy`.
+- Ajout de tests Angular pour l'initialisation neutre et la mise à jour des
+  contrôles audio.
+
+## 14 octobre 2026 - Mission 3 : mini réseau social et amis
+
+- Création du modèle Mongoose `Friendship` avec les statuts `pending`,
+  `accepted` et `rejected`.
+- Ajout des routes protégées de recherche et de gestion des relations :
+  `/api/users/search`, `/api/friends`, `/api/friends/request`,
+  `/api/friends/accept/:id`, `/api/friends/reject/:id` et
+  `DELETE /api/friends/:id`.
+- Ajout de `Track.visibility` avec les valeurs `private`, `public` et
+  `friends`, en conservant `isPublic` pour la compatibilité.
+- Ajout du contrôle backend des pistes réservées aux amis acceptés, avec
+  `GET /api/tracks?friends=true` et la protection de la lecture audio.
+- Création de `FriendService`, des modèles Angular et de la page `/friends`
+  pour rechercher des utilisateurs, inviter, afficher les demandes entrantes
+  et sortantes, accepter, refuser et retirer un ami.
+- Ajout de l'onglet « Pistes de mes amis » et du choix de visibilité lors de
+  l'upload.
+- Ajout de tests backend pour `Friendship` et de tests Angular avec
+  `HttpTestingController` pour `FriendService`.
+
+## 14 octobre 2026 - Audit Mission 3 : identité et recherche utilisateurs
+
+- Vérification : le JWT contient `sub` et `email`; le nom d'utilisateur n'est
+  pas nécessaire dans le token car `/api/users/me` renvoie le profil sécurisé
+  à jour avec `id`, `name`, `email` et `createdAt`.
+- Vérification : `User.toPublic()` n'expose jamais `passwordHash`, et la route
+  de recherche utilise cette projection publique.
+- Correction : déplacement des helpers d'amitié hors du middleware `auth`, afin
+  que les routes de pistes et de relations puissent réellement les utiliser.
+- Correction : échappement de la recherche avant création de la regex Mongoose,
+  limite à 80 caractères, minimum de 2 caractères, exclusion de l'utilisateur
+  connecté et maximum de 20 résultats.
+- Ajout d'un debounce frontend de 300 ms dans la page réseau ; la recherche
+  passe toujours par `FriendService` et ne charge jamais tous les utilisateurs.
+- Ajout de tests backend sur l'échappement et l'absence de `passwordHash`.
+- Vérification finale de la documentation : correction de la signature
+  documentée de `TrackService.upload` (`visibility`) et ajout du champ
+  `visibility` au contrat multipart de `POST /tracks`.
+
+## 15 novembre 2026 - TP4 : mini-projet, missions 1 à 4
+
+Le détail technique de chaque mission (interface, choix, fichiers, tests) est
+dans `REPORT.md`. Cette section résume l'usage de l'IA pendant la séance.
+
+### Objectif
+
+Terminer le mini-projet à partir du prototype des TP1 à 3, en suivant la diapo
+« Fichiers publics / privés » : recherche, fichiers récents, partage avec des
+amis, arrêt d'un partage, activité des amis, tests unitaires et `REPORT.md`.
+
+### Prompts principaux
+
+1. « après avoir lu le sujet etudiant TP1,TP2,TP3 [...] analyse tout le
+   projet, tout ce qui a été fait, puis j'aimerais que tu m'aides à améliorer
+   mon projet et le finir (à partir de TP4) », avec les deux diapos du sujet.
+2. « oui, mission 2 avec partage piste par piste ».
+3. « oui continue » (mission 3), puis « continue » (mission 4).
+4. « j'ai remarqué que je ne peux pas mettre en pause un son ».
+
+### Plan proposé par l'agent
+
+L'agent a d'abord comparé le code existant aux exigences du sujet, puis a
+proposé un découpage en missions, réalisées une par une :
+
+1. recherche de pistes et « Récemment ajoutés » ;
+2. partage piste par piste et arrêt d'un partage ;
+3. fil d'activité des amis ;
+4. téléchargement, image de couverture et badges de visibilité.
+
+### Décision prise par le binôme
+
+Pour la mission 2, l'agent a proposé deux options : partager une piste avec
+des amis choisis, ou garder « tous mes amis » et ajouter seulement l'arrêt du
+partage. Nous avons choisi le partage piste par piste, plus proche du sujet.
+
+### Vérifications réalisées
+
+- Par l'agent, à chaque mission : `npm test` dans `backend/` (37 tests à la
+  fin, 6 au départ), `npm test` dans `frontend-starter/` (64 tests à la fin,
+  11 au départ) et `npm run build`.
+- Par le binôme : lancement de l'application et test de la lecture. La pause
+  ne fonctionnait pas depuis le bouton d'une piste ; après correction, elle
+  fonctionne.
+- À faire : scénario complet à deux comptes amis (partage, écoute par l'ami,
+  arrêt du partage, fil d'activité). Les tests automatiques n'utilisent pas
+  MongoDB, donc ce parcours n'est pas encore prouvé.
+
+### Erreurs et problèmes rencontrés
+
+- Le bouton ▶ relançait le téléchargement et la lecture depuis le début au
+  lieu de mettre en pause : problème trouvé par nous en testant, pas par les
+  tests de l'agent. Corrigé par un bouton lecture/pause.
+- Un test de l'agent échouait parce qu'il remplaçait `MatSnackBar` par un
+  faux objet que le composant n'utilisait pas ; l'agent a corrigé le test, pas
+  le code.
+- Limites acceptées : la date affichée dans le fil d'activité est celle de
+  l'ajout de la piste, pas celle du partage ; la couverture ne peut pas être
+  changée après l'import.
+
+### Fichiers effectivement modifiés
+
+- Backend : `src/app.js`, `src/models/Track.js`, `test/api.test.js`.
+- Frontend : `tracks-page`, `friends-page`, nouveaux composants
+  `track-share-editor` et `track-cover`, `shared/services`, `shared/models`,
+  `shared/utils/save-blob.ts`.
+- Documentation : `REPORT.md` (nouveau), `API_CONTRACT.md`, `README.md`,
+  `PROJECT_CONTEXT.md`.
+
+### À savoir expliquer sans l'agent
+
+- Pourquoi l'accès à une piste partagée est revérifié à chaque écoute, et ce
+  qui se passe quand on retire un ami.
+- Pourquoi la recherche ne peut pas faire apparaître une piste privée
+  (portée et recherche combinées avec `$and`, saisie échappée).
+- Pourquoi les couvertures et les téléchargements passent par un Blob et
+  `HttpClient` plutôt que par une simple URL (en-tête `Authorization`).
+- Pourquoi le fil d'activité est calculé à la demande, sans collection dédiée.
+- Ce que les tests prouvent, et ce qu'ils ne prouvent pas sans MongoDB.

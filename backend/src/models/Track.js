@@ -18,6 +18,25 @@ const schema = new mongoose.Schema(
     storedName: { type: String, required: true, select: false },
     mimeType: { type: String, required: true },
     size: { type: Number, required: true, min: 0 },
+    isPublic: { type: Boolean, default: false, index: true },
+    visibility: {
+      type: String,
+      enum: ["private", "public", "friends"],
+      default: "private",
+      index: true,
+    },
+    // Image de couverture optionnelle, stockée sur disque comme l'audio.
+    // coverStoredName reste masqué ; coverMimeType sert aussi à savoir si une
+    // couverture existe (hasCover) sans exposer le nom technique.
+    coverStoredName: { type: String, default: null, select: false },
+    coverMimeType: { type: String, default: null },
+    // Partage ciblé : amis autorisés à écouter une piste privée.
+    // L'amitié est revérifiée à chaque accès : retirer un ami coupe le partage.
+    sharedWith: {
+      type: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+      default: [],
+      index: true,
+    },
   },
   { timestamps: true },
 );
@@ -38,6 +57,11 @@ schema.methods.toPublic = function () {
     originalName: this.originalName,
     mimeType: this.mimeType,
     size: this.size,
+    isPublic: this.visibility === "public" || this.isPublic === true,
+    visibility: this.visibility ?? (this.isPublic ? "public" : "private"),
+    hasCover: Boolean(this.coverMimeType),
+    // toPublic n'est utilisé que pour le propriétaire (upload) : il peut voir ses partages.
+    sharedWith: (this.sharedWith ?? []).map((id) => ({ id: String(id), name: null })),
     createdAt: this.createdAt,
   };
 };
